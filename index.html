@@ -6,8 +6,9 @@
     <title>CultureLink - Your Cultural Companion</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <style>
-        /* ===== VARIABLES ET RESET ===== */
+   
+   <style>
+/* ===== VARIABLES ET RESET ===== */
         :root {
             --primary-blue: #3A86FF;
             --primary-cyan: #00C9A7;
@@ -2665,7 +2666,7 @@
                 -webkit-overflow-scrolling: touch;
             }
         }
-    </style>
+</style>
 </head>
 <body data-theme="light">
     <!-- INTERFACE ACCUEIL -->
@@ -2693,7 +2694,7 @@
                                 <span class="language-text">English</span>
                             </div>
                             <div class="language-option" data-lang="fr">
-                                <span class="flag-icon">🐇</span>
+                                <span class="flag-icon">🇫🇷</span>
                                 <span class="language-text">Français</span>
                             </div>
                         </div>
@@ -3687,7 +3688,7 @@ Utilise un mélange de français et d'anglais de manière naturelle selon le con
     
     function updateLanguageUI() {
         if (currentFlag) {
-            currentFlag.textContent = currentLanguage === 'en' ? '🇬🇧' : '🐇';
+            currentFlag.textContent = currentLanguage === 'en' ? '🇬🇧' : '🇫🇷';
         }
         
         if (languageOptions) {
@@ -3775,13 +3776,7 @@ Utilise un mélange de français et d'anglais de manière naturelle selon le con
         
         // Événements de navigation
         if (startChatBtn) startChatBtn.addEventListener('click', showChat);
-        if (backBtn) backBtn.addEventListener('click', () => {
-            if (document.activeElement === messageInput) {
-                messageInput.blur();
-            } else {
-                showHome();
-            }
-        });
+        if (backBtn) backBtn.addEventListener('click', handleBackButton);
         
         // Événements du thème
         if (themeBtn) themeBtn.addEventListener('click', toggleTheme);
@@ -3792,18 +3787,9 @@ Utilise un mélange de français et d'anglais de manière naturelle selon le con
         if (sendBtn) sendBtn.addEventListener('click', sendMessage);
         if (helloBtn) helloBtn.addEventListener('click', sendHello);
         
-        // Gestion de Shift+Enter pour retour à la ligne
+        // Gestion améliorée du textarea
         if (messageInput) {
-            messageInput.addEventListener('keydown', (e) => {
-                if (e.key === 'Enter') {
-                    if (e.shiftKey) {
-                        return;
-                    } else {
-                        e.preventDefault();
-                        sendMessage();
-                    }
-                }
-            });
+            messageInput.addEventListener('keydown', handleTextareaKeydown);
         }
         
         // Compteur de caractères
@@ -3838,9 +3824,9 @@ Utilise un mélange de français et d'anglais de manière naturelle selon le con
         if (contactClose) contactClose.addEventListener('click', () => hideModal('contact'));
         if (whatsappClose) whatsappClose.addEventListener('click', () => hideModal('whatsapp'));
         
-        // Événements des boutons de téléchargement
-        if (downloadHeaderBtn) downloadHeaderBtn.addEventListener('click', downloadApp);
-        if (downloadMainBtn) downloadMainBtn.addEventListener('click', downloadApp);
+        // Événements des boutons de téléchargement - MODIFICATION ICI
+        if (downloadHeaderBtn) downloadHeaderBtn.addEventListener('click', handleDownloadClick);
+        if (downloadMainBtn) downloadMainBtn.addEventListener('click', handleDownloadClick);
         
         // Événements des boutons d'actions rapides
         setupQuickActions();
@@ -3867,13 +3853,12 @@ Utilise un mélange de français et d'anglais de manière naturelle selon le con
         // Surveiller le défilement avec gestion améliorée
         if (messagesContainer) {
             messagesContainer.addEventListener('scroll', handleScrollImproved);
-            // Empêcher le défilement automatique si l'utilisateur fait défiler manuellement
             messagesContainer.addEventListener('wheel', () => {
                 isUserScrolling = true;
                 clearTimeout(scrollTimer);
                 scrollTimer = setTimeout(() => {
                     isUserScrolling = false;
-                }, 1500); // Réactiver le défilement automatique après 1.5s d'inactivité
+                }, 1500);
             });
             
             messagesContainer.addEventListener('touchstart', () => {
@@ -4060,6 +4045,41 @@ Utilise un mélange de français et d'anglais de manière naturelle selon le con
         }
     }
 
+    // ===== NOUVELLES FONCTIONS POUR LES AMÉLIORATIONS =====
+    
+    function handleBackButton() {
+        // Si le champ de saisie a le focus, on le perd
+        if (document.activeElement === messageInput) {
+            messageInput.blur();
+        } else {
+            // Sinon, on retourne à l'accueil
+            showHome();
+        }
+    }
+    
+    function handleTextareaKeydown(e) {
+        // Gestion améliorée du textarea
+        if (e.key === 'Enter') {
+            if (e.shiftKey) {
+                // Shift+Enter: retour à la ligne
+                return;
+            } else if (e.ctrlKey || e.metaKey) {
+                // Ctrl/Cmd+Enter: envoi du message
+                e.preventDefault();
+                sendMessage();
+            } else {
+                // Enter seul: envoi du message
+                e.preventDefault();
+                sendMessage();
+            }
+        }
+    }
+    
+    function handleDownloadClick() {
+        // Ouvrir le lien directement sans afficher de modal
+        window.open('https://apk.linky.com', '_blank');
+    }
+
     // ===== GESTION DU GÉNÉRATEUR D'IMAGES =====
     
     function showImageGenerator() {
@@ -4123,14 +4143,12 @@ Utilise un mélange de français et d'anglais de manière naturelle selon le con
             
             console.log('Génération d\'image avec l\'URL:', apiUrl);
             
-            // Pour l'API magic, on s'attend à une réponse JSON avec une URL d'image
             const response = await fetch(apiUrl);
             
             if (!response.ok) {
                 throw new Error(`HTTP error: ${response.status}`);
             }
             
-            // Essayer de parser la réponse comme JSON
             let imageUrl;
             try {
                 const data = await response.json();
@@ -4139,7 +4157,6 @@ Utilise un mélange de français et d'anglais de manière naturelle selon le con
                 } else if (data.data && data.data.image) {
                     imageUrl = data.data.image;
                 } else {
-                    // Si pas de JSON valide, utiliser l'URL de la réponse
                     imageUrl = response.url;
                 }
             } catch (jsonError) {
@@ -4151,11 +4168,10 @@ Utilise un mélange de français et d'anglais de manière naturelle selon le con
                 generatedImage.src = imageUrl;
                 generatedImage.alt = prompt;
                 
-                // Forcer le chargement de l'image
                 await new Promise((resolve, reject) => {
                     generatedImage.onload = resolve;
                     generatedImage.onerror = reject;
-                    setTimeout(resolve, 3000); // Timeout après 3s
+                    setTimeout(resolve, 3000);
                 });
                 
                 if (imageLoading) imageLoading.style.display = 'none';
@@ -4493,7 +4509,6 @@ Utilise un mélange de français et d'anglais de manière naturelle selon le con
             
             const delay = Math.random() * 30 + 20;
             
-            // Défilement intelligent pendant le streaming
             smartScrollDuringStreaming();
             
             setTimeout(streamNextChar, delay);
@@ -4518,7 +4533,6 @@ Utilise un mélange de français et d'anglais de manière naturelle selon le con
         
         finishTyping();
         
-        // Défilement final après la fin du streaming
         scrollToBottom(true);
     }
 
@@ -4532,7 +4546,7 @@ Utilise un mélange de français et d'anglais de manière naturelle selon le con
         const contentHeight = messagesContainer.scrollHeight;
         
         const distanceFromBottom = contentHeight - scrollPosition - containerHeight;
-        const isNearBottom = distanceFromBottom < 100; // 100px du bas
+        const isNearBottom = distanceFromBottom < 100;
         
         if (isNearBottom) {
             autoScrollEnabled = true;
@@ -4558,7 +4572,7 @@ Utilise un mélange de français et d'anglais de manière naturelle selon le con
         const contentHeight = messagesContainer.scrollHeight;
         
         const distanceFromBottom = contentHeight - scrollPosition - containerHeight;
-        const isNearBottom = distanceFromBottom < 300; // 300px du bas
+        const isNearBottom = distanceFromBottom < 300;
         
         if (isNearBottom) {
             requestAnimationFrame(() => {
@@ -4951,7 +4965,7 @@ Utilise un mélange de français et d'anglais de manière naturelle selon le con
         const savedTheme = localStorage.getItem('culturelink_theme');
         if (savedTheme) {
             currentTheme = savedTheme;
-            document.body.setAttribute('data-theme', currentTheme);
+            document.body.setAttribute('data-theme', savedTheme);
         }
         updateThemeIcon();
     }
@@ -5173,44 +5187,6 @@ Utilise un mélange de français et d'anglais de manière naturelle selon le con
                     isModalOpen = false;
                     document.body.classList.remove('no-scroll');
                 }
-            }
-        });
-    }
-
-    function downloadApp() {
-        const downloadModal = document.createElement('div');
-        downloadModal.className = 'download-notification';
-        downloadModal.innerHTML = `
-            <div class="download-content">
-                <i class="fas fa-download" style="font-size: 2rem; margin-bottom: 1rem;"></i>
-                <h3>${currentLanguage === 'en' ? 'Download' : 'Téléchargement'}</h3>
-                <p>${currentLanguage === 'en' 
-                    ? 'The CultureLink application will be available soon!' 
-                    : 'L\'application CultureLink sera bientôt disponible !'}</p>
-                <button class="btn-primary" style="margin-top: 1rem;">${currentLanguage === 'en' ? 'OK' : 'D\'accord'}</button>
-            </div>
-        `;
-        
-        document.body.appendChild(downloadModal);
-        
-        setTimeout(() => {
-            downloadModal.classList.add('show');
-        }, 10);
-        
-        const closeBtn = downloadModal.querySelector('.btn-primary');
-        closeBtn.addEventListener('click', () => {
-            downloadModal.classList.remove('show');
-            setTimeout(() => {
-                document.body.removeChild(downloadModal);
-            }, 300);
-        });
-        
-        downloadModal.addEventListener('click', (e) => {
-            if (e.target === downloadModal) {
-                downloadModal.classList.remove('show');
-                setTimeout(() => {
-                    document.body.removeChild(downloadModal);
-                }, 300);
             }
         });
     }
